@@ -1,0 +1,4 @@
+Makefile
+config.mk
+**/bin/
+*\.vscode/
