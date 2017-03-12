@@ -1,3 +1,7 @@
+/**
+ * @author Felix Stegmaier
+ */
+
 #define ENABLE_DEBUG
 
 #ifndef DEBUG_H

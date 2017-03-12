@@ -1,3 +1,7 @@
+/**
+ * @author Felix Stegmaier
+ */
+
 #include "OptParser.h"
 
 /**
