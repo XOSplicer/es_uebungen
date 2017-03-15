@@ -4,8 +4,11 @@
 
 #include "OptParser.h"
 
+//TODO 1st will not (necessary) be bin
+//TODO what if space at 2 and not in new arg
+
 /**
- * [CmdLineOptParser::Parse description]
+ * parse command line arguments, calls Option() for each argument
  * @param  argc number of command line arguments, i.e. len(argv)
  * @param  argv array of command line arguments
  * @return      returns true, if all arguments are successfully parsed
@@ -43,7 +46,7 @@ bool CmdLineOptParser::Parse(int argc, char* argv[]) {
       if (argc-1 == argn /* last arg */
           || '-' == argv[argn+1][0]) /* next no value */ { /* type (1) */
           option_c = argv[argn][1];
-          option_info = "";
+          option_info = NULL;
       } else { /* type (4) */
         option_c = argv[argn][1];
         option_info = argv[argn+1];
@@ -63,11 +66,11 @@ bool CmdLineOptParser::Parse(int argc, char* argv[]) {
         option_info = &(argv[argn][2]);
       }
     }
-    if (!CmdLineOptParser::Option(option_c, option_info)) {
+    if (!this->Option(option_c, option_info)) {
       DEBUG("not a valid option in argv[" << argn << "] : '" << option_c << "' '" << option_info << "'");
       return false;
     }
-    DEBUG("found option: '" << option_c << "' '" << option_info << "'");
+    DEBUG("found option: '" << option_c << "' '" << (option_info?option_info:"") << "'");
   }
 
   return true;
@@ -75,13 +78,12 @@ bool CmdLineOptParser::Parse(int argc, char* argv[]) {
 
 /**
  * Can be overwritten to turn option into saved flag
- * @param  c    the character of the option flag
- * @param  info the string value behind it
+ * @param  c    the character of the option flag, not NULL
+ * @param  info the string value behind it, NULL for flag only
  * @return      returns true, if option was successfully parsed
  */
-bool CmdLineOptParser::Option(const char c, const char* info) {
-  if (!c
-      || !info) {
+bool CmdLineOptParser::Option(const char c, const char*) {
+  if (!c) {
     return false;
   }
   return true;
