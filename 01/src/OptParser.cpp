@@ -4,7 +4,6 @@
 
 #include "OptParser.h"
 
-//TODO 1st will not (necessary) be bin
 //TODO what if space at 2 and not in new arg
 
 /**
@@ -34,7 +33,11 @@ bool CmdLineOptParser::Parse(int argc, char* argv[]) {
       (3) -x=value
       (4) -x value
    */
-  for (int argn = 1; argn < argc; argn++) {
+  int start_arg = 1;
+  if ('-'==argv[0][0]) { /* first is flag */
+    start_arg = 0;
+  }
+  for (int argn = start_arg; argn < argc; argn++) {
     if (!('-' == argv[argn][0])
         || 2 > std::strlen(argv[argn])) {
       DEBUG("bad arg in argv[" << argn << "]");
