@@ -23,7 +23,7 @@ bool CmdLineOptParser::Parse(int argc, char* argv[]) {
       DEBUG("null string in argv[" << argn << "]");
       return false;
     }
-    DEBUG("argv["<< argn << "]=" << argv[argn] << " (" << std::strlen(argv[argn]) << ")");
+    DEBUG("argv["<< argn << "]=" << argv[argn] << " (" << my_strlen(argv[argn]) << ")");
   }
   /* parse all the argument */
   /*
@@ -39,13 +39,13 @@ bool CmdLineOptParser::Parse(int argc, char* argv[]) {
   }
   for (int argn = start_arg; argn < argc; argn++) {
     if (!('-' == argv[argn][0])
-        || 2 > std::strlen(argv[argn])) {
+        || 2 > my_strlen(argv[argn])) {
       DEBUG("bad arg in argv[" << argn << "]");
       return false;
     }
     char option_c = 0;
     char const * option_info = NULL;
-    if (2 == std::strlen(argv[argn])) { /* type (1) or (4) */
+    if (2 == my_strlen(argv[argn])) { /* type (1) or (4) */
       if (argc-1 == argn /* last arg */
           || '-' == argv[argn+1][0]) /* next no value */ { /* type (1) */
           option_c = argv[argn][1];
@@ -58,7 +58,7 @@ bool CmdLineOptParser::Parse(int argc, char* argv[]) {
       }
     } else { /* type (2) or (3), strlen > 2 */
       if ('=' == argv[argn][2]) { /* type (3) */
-        if(!( 3 < std::strlen(argv[argn]))) { /* only valid with -x=value */
+        if(!( 3 < my_strlen(argv[argn]))) { /* only valid with -x=value */
           DEBUG("arg to short with '=' in argv[" << argn << "]");
           return false;
         }
@@ -90,4 +90,21 @@ bool CmdLineOptParser::Option(const char c, const char*) {
     return false;
   }
   return true;
+}
+
+/**
+ * simple strlen substitute
+ * @param  str the string, \0 terminated
+ * @return     the length, 0 for NULL
+ */
+size_t my_strlen(const char* str) {
+  if(!str) {
+    return 0;
+  }
+  /* dont stop, may segfault or run forever */
+  for(const char* char_ptr = str;  ; ++char_ptr) {
+    if ('\0' == *char_ptr) {
+      return char_ptr - str;
+    }
+  }
 }
