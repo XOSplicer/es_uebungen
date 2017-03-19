@@ -2,7 +2,7 @@
  * @author Felix Stegmaier
  */
 
-#define ENABLE_DEBUG
+//#define ENABLE_DEBUG
 
 #ifndef DEBUG_H
 #define DEBUG_H

@@ -6,6 +6,7 @@
 #define OPTPARSER_H
 
 #include "debug.h"
+#include "util.h"
 
 class CmdLineOptParser
 {
@@ -16,7 +17,5 @@ class CmdLineOptParser
     // returns true, if option was successfully parsed.
     virtual bool Option(const char c, const char* info);
 };
-
-size_t my_strlen(const char* str);
 
 #endif
