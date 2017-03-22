@@ -4,8 +4,6 @@
 
 #include "OptParser.h"
 
-//TODO what if space at 2 and not in new arg
-
 /**
  * parse command line arguments, calls Option() for each argument
  * @param  argc number of command line arguments, i.e. len(argv)
