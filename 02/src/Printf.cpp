@@ -38,6 +38,7 @@ char* insert_end(char* dst, const void* end);
  * @param  VARARGS format value arguments
  * @return         pointer to the first writable char (after '\0')
  *                 nullptr if any argument is not valid or fmt is not correct
+ *                 the content of buffer dst may be wrong in this case
  */
 char* Printf(char* dst, const void* end, const char* fmt, ...) {
   if (!dst
@@ -49,10 +50,48 @@ char* Printf(char* dst, const void* end, const char* fmt, ...) {
 
   char* next_writable = dst;
 
+  va_list args;
+  va_start(args, fmt);
+
   for (const char* fmt_position = fmt; '\0' != *fmt_position ; ++fmt_position) {
     if ('%' == *fmt_position) { /* insert argument */
-      /* TODO code format here */
+      switch (*(fmt_position+1)) { /* format specifier at next position */
+        case 'd':
+          next_writable = insert_d(next_writable, end,
+                                   va_arg(args, signed int));
+          break;
+        case 'u':
+          next_writable = insert_u(next_writable, end,
+                                   va_arg(args, unsigned int));
+          break;
+        case 'c':
+          next_writable = insert_c(next_writable, end,
+                                   static_cast<char>(va_arg(args, int)));
+          break;
+        case 's':
+          next_writable = insert_s(next_writable, end,
+                                   va_arg(args,const char*));
+          break;
+        case 'x':
+          next_writable = insert_x(next_writable, end,
+                                   va_arg(args, unsigned int));
+          break;
+        case 'b':
+          next_writable = insert_b(next_writable, end,
+                                   va_arg(args, unsigned int));
+          break;
+        case '%':
+          next_writable = insert_percent(next_writable, end);
+          break;
+        case '\0': /* % not allowed on last position in fmt */
+          return nullptr;
+          break;
+        default: /* unrecognized format specifier */
+          return nullptr;
+      }
 
+      /* skip one char, since it was the format specifier */
+      ++fmt_position;
     } else { /* insert verbatim */
       next_writable = insert_verbatim(next_writable, end, *fmt_position);
     }
@@ -60,6 +99,7 @@ char* Printf(char* dst, const void* end, const char* fmt, ...) {
       return nullptr;
     }
   }
+  va_end(args);
   next_writable = insert_end(next_writable, end);
   return next_writable;
 }
@@ -74,6 +114,73 @@ char* insert_verbatim(char* dst, const void* end, const char value) {
   }
   *dst = value;
   return dst+1;
+}
+
+char* insert_d(char* dst, const void* end, const int /*value*/) {
+  if (!dst
+      || !end
+      || end <= dst) {
+    return nullptr;
+  }
+  //TODO
+  /*test*/ return nullptr;
+}
+
+char* insert_u(char* dst, const void* end, const unsigned int /*value*/) {
+  if (!dst
+      || !end
+      || end <= dst) {
+    return nullptr;
+  }
+  //TODO
+  /*test*/ return nullptr;
+}
+
+char* insert_c(char* dst, const void* end, const char value) {
+  /* checks done in insert_verbatim */
+  DEBUG("insert char");
+  return insert_verbatim(dst, end, value);
+}
+
+char* insert_s(char* dst, const void* end, const char* value) {
+  DEBUG("insert string: " << value);
+  if (!dst
+      || !end
+      || !value
+      || end <= dst) {
+    return nullptr;
+  }
+
+  for (const char* s = value; '\0' != *s; ++s) {
+    if(dst < end) {
+      *dst = *s;
+    } else {
+      return nullptr;
+    }
+    ++dst;
+  }
+
+  return dst;
+}
+
+char* insert_x(char* dst, const void* end, const unsigned int /*value*/) {
+  if (!dst
+      || !end
+      || end <= dst) {
+    return nullptr;
+  }
+  //TODO
+  /*test*/ return nullptr;
+}
+
+char* insert_b(char* dst, const void* end, const unsigned int /*value*/) {
+  if (!dst
+      || !end
+      || end <= dst) {
+    return nullptr;
+  }
+  //TODO
+  /*test*/ return nullptr;
 }
 
 char* insert_percent(char* dst, const void* end) {
