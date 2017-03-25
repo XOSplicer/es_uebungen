@@ -7,7 +7,7 @@
 /*
 Insert functions:
 Insert value into dst for given format.
-Return next writable char fmt_position.
+Return next writable char in buffer.
  */
 
 char* insert_verbatim(char* dst, const void* end, const char value);
@@ -21,6 +21,19 @@ char* insert_percent(char* dst, const void* end);
 char* insert_end(char* dst, const void* end);
 
 /**
+ * insert the given value as string representaion to given base
+ * @param  dst   buffer to write to
+ * @param  end   first non-writable position after buffer
+ * @param  value the value to be inserted
+ * @param  base  the base of the string representaion
+ * @return       next writable char in buffer
+ */
+char* insert_uint_with_base(char* dst, const void* end, const unsigned int value, const unsigned int base);
+
+static const char digits[] = "0123456789abcdef";
+
+
+/**
  * Minimal printf implementation
  * Support of
  *  (0) Varbatim text
@@ -28,8 +41,8 @@ char* insert_end(char* dst, const void* end);
  *  (2) %u for unsigned int
  *  (3) %c for a single char
  *  (4) %s for a null terminated string
- *  (5) %x for hexadecimal (0xaf) TODO signed ? raw ?
- *  (6) %b for binary (0b10101) TODO signed ? raw ?
+ *  (5) %x for hexadecimal (0xaf) without leading 0s
+ *  (6) %b for binary (0b10101) without leading 0s
  *  (7) %% for char '%'
  *
  * @param  dst     pointer to the buffer to write the formated string to
@@ -49,7 +62,6 @@ char* Printf(char* dst, const void* end, const char* fmt, ...) {
     }
 
   char* next_writable = dst;
-
   va_list args;
   va_start(args, fmt);
 
@@ -89,7 +101,6 @@ char* Printf(char* dst, const void* end, const char* fmt, ...) {
         default: /* unrecognized format specifier */
           return nullptr;
       }
-
       /* skip one char, since it was the format specifier */
       ++fmt_position;
     } else { /* insert verbatim */
@@ -99,6 +110,7 @@ char* Printf(char* dst, const void* end, const char* fmt, ...) {
       return nullptr;
     }
   }
+
   va_end(args);
   next_writable = insert_end(next_writable, end);
   return next_writable;
@@ -116,24 +128,20 @@ char* insert_verbatim(char* dst, const void* end, const char value) {
   return dst+1;
 }
 
-char* insert_d(char* dst, const void* end, const int /*value*/) {
-  if (!dst
-      || !end
-      || end <= dst) {
-    return nullptr;
+char* insert_d(char* dst, const void* end, const int value) {
+  /* checks done in subfunctions */
+  char* next = dst;
+  int value_adjusted = value;
+  if (value < 0) {
+    next = insert_verbatim(next, end, '-');
+    value_adjusted = (-1) * value;
   }
-  //TODO
-  /*test*/ return nullptr;
+  return insert_uint_with_base(next, end, static_cast<unsigned int>(value_adjusted), 10);
 }
 
-char* insert_u(char* dst, const void* end, const unsigned int /*value*/) {
-  if (!dst
-      || !end
-      || end <= dst) {
-    return nullptr;
-  }
-  //TODO
-  /*test*/ return nullptr;
+char* insert_u(char* dst, const void* end, const unsigned int value) {
+  /* checks done in subfunctions */
+  return insert_uint_with_base(dst, end, value, 10);
 }
 
 char* insert_c(char* dst, const void* end, const char value) {
@@ -150,7 +158,6 @@ char* insert_s(char* dst, const void* end, const char* value) {
       || end <= dst) {
     return nullptr;
   }
-
   for (const char* s = value; '\0' != *s; ++s) {
     if(dst < end) {
       *dst = *s;
@@ -159,28 +166,21 @@ char* insert_s(char* dst, const void* end, const char* value) {
     }
     ++dst;
   }
-
   return dst;
 }
 
-char* insert_x(char* dst, const void* end, const unsigned int /*value*/) {
-  if (!dst
-      || !end
-      || end <= dst) {
-    return nullptr;
-  }
-  //TODO
-  /*test*/ return nullptr;
+char* insert_x(char* dst, const void* end, const unsigned int value) {
+  /* checks done in subfunctions */
+  char* next = insert_verbatim(dst, end, '0');
+  next = insert_verbatim(next, end, 'x');
+  return insert_uint_with_base(next, end, value, 16);
 }
 
-char* insert_b(char* dst, const void* end, const unsigned int /*value*/) {
-  if (!dst
-      || !end
-      || end <= dst) {
-    return nullptr;
-  }
-  //TODO
-  /*test*/ return nullptr;
+char* insert_b(char* dst, const void* end, const unsigned int value) {
+  /* checks done in subfunctions */
+  char* next = insert_verbatim(dst, end, '0');
+  next = insert_verbatim(next, end, 'b');
+  return insert_uint_with_base(next, end, value, 2);
 }
 
 char* insert_percent(char* dst, const void* end) {
@@ -193,4 +193,26 @@ char* insert_end(char* dst, const void* end) {
   /* checks done in insert_verbatim */
   DEBUG("insert end");
   return insert_verbatim(dst, end, '\0');
+}
+
+char* insert_uint_with_base(char* dst, const void* end,
+                            const unsigned int value, const unsigned int base) {
+  if(!dst
+     || !end
+     || end <= dst
+     || 0 == base
+     || base > 16) {
+       return nullptr;
+     }
+  /*
+    this funcion works recursively from the last digit to the first
+   */
+  char digit =  digits[value%base];          /* get the current digit */
+  unsigned int shifted_value = value / base; /* shift value right in base */
+  char* write_to = dst;
+  if (shifted_value) { /* there are digits left on the left */
+    /* recursion to write to the left first */
+    write_to = insert_uint_with_base(dst, end, shifted_value, base);
+  }
+  return insert_verbatim(write_to, end, digit);
 }
