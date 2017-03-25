@@ -117,7 +117,6 @@ char* Printf(char* dst, const void* end, const char* fmt, ...) {
 }
 
 char* insert_verbatim(char* dst, const void* end, const char value) {
-  DEBUG("insert verbatim: " << value);
   if (!dst
       || !end
       /* value may be 0 for '\0' */
@@ -146,12 +145,10 @@ char* insert_u(char* dst, const void* end, const unsigned int value) {
 
 char* insert_c(char* dst, const void* end, const char value) {
   /* checks done in insert_verbatim */
-  DEBUG("insert char");
   return insert_verbatim(dst, end, value);
 }
 
 char* insert_s(char* dst, const void* end, const char* value) {
-  DEBUG("insert string: " << value);
   if (!dst
       || !end
       || !value
@@ -185,13 +182,11 @@ char* insert_b(char* dst, const void* end, const unsigned int value) {
 
 char* insert_percent(char* dst, const void* end) {
   /* checks done in insert_verbatim */
-  DEBUG("insert percent");
   return insert_verbatim(dst, end, '%');
 }
 
 char* insert_end(char* dst, const void* end) {
   /* checks done in insert_verbatim */
-  DEBUG("insert end");
   return insert_verbatim(dst, end, '\0');
 }
 
