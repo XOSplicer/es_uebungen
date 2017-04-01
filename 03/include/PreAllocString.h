@@ -1,19 +1,31 @@
 #ifndef PREALLOCSTRING_H
 #define PREALLOCSTRING_H
 
-#define CREATE(varName, size)
-//TODO fill marco
+#include <cstddef>
 
+#include "debug.h"
+
+#define CREATE(varName, size)\
+  PreAllocString<size> varName;
+
+template<size_t SIZE>
 class PreAllocString {
   public:
 
-    //TODO add constructor
+    PreAllocString()
+    : m_length(0) {
+      DEBUG("New PreAllocString of SIZE " << SIZE);
+    }
 
     /* Current number of characters in string */
-    size_t GetLength() const;
+    size_t GetLength() const {
+      return m_length;
+    }
 
     /* Maximum number of characters possible */
-    constexpr size_t SizeOf();
+    constexpr size_t SizeOf() {
+      return m_size;
+    }
 
     /* Empty the string , set length field to zero */
     void Empty () ;
@@ -39,9 +51,9 @@ class PreAllocString {
   protected:
 
   private:
-    size_t length;
-    const size_t size;
-
-}
+    size_t m_length;
+    const size_t m_size = SIZE;
+    char m_content[SIZE];
+};
 
 #endif
