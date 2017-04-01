@@ -15,6 +15,7 @@ class PreAllocString {
     PreAllocString()
     : m_length(0) {
       DEBUG("New PreAllocString of SIZE " << SIZE);
+      Empty();
     }
 
     /* Current number of characters in string */
@@ -28,7 +29,7 @@ class PreAllocString {
     }
 
     /* Empty the string , set length field to zero */
-    void Empty () ;
+    void Empty();
 
     /* insert formated string */
     void AddFormat(const char * format, ...);
@@ -39,14 +40,14 @@ class PreAllocString {
     /* operators */
     operator const char *() const;
     operator const void *() const;
-    const char & operator [](const int idx);
+    const char& operator[](const int idx);
 
-    PreAllocString & operator =(char rhs);
-    PreAllocString & operator =(const char* rhs);
-    PreAllocString & operator =(char* const rhs);
+    PreAllocString& operator=(char rhs);
+    PreAllocString& operator=(const char* rhs);
+    PreAllocString& operator=(char* const rhs);
 
-    PreAllocString & operator +=(char rhs);
-    PreAllocString & operator +=(char const* rhs);
+    PreAllocString& operator+=(char rhs);
+    PreAllocString& operator+=(char const* rhs);
 
   protected:
 
@@ -54,6 +55,9 @@ class PreAllocString {
     size_t m_length;
     const size_t m_size = SIZE;
     char m_content[SIZE];
+    char* m_next_writable;
 };
+
+#include "../src/PreAllocString.tcc"
 
 #endif
