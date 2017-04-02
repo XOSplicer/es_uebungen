@@ -27,6 +27,11 @@ int main() {
   //copy constructor
   PreAllocString<512> s = s_512;
 
+  s.AddWhiteSpace();
+  s.AddWhiteSpace();
+
+  s_512.AddWhiteSpace();
+
   DEBUG("size: " << s.SizeOf());
   DEBUG("length: " << s.GetLength());
 

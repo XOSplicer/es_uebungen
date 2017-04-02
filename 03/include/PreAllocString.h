@@ -5,6 +5,17 @@
 
 #include "debug.h"
 
+
+/*
+TODO fix copy constructor
+TODO implement things
+TODO import the Printf
+ */
+
+
+
+
+
 #define CREATE(varName, size)\
   PreAllocString<size> varName;
 
