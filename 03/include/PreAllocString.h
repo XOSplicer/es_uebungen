@@ -4,6 +4,7 @@
 #include <cstddef>
 
 #include "debug.h"
+#include "util.h"
 #include "Printf.h"
 
 /*
@@ -23,7 +24,7 @@ class PreAllocString {
       Empty();
     }
 
-    //PreAllocString(const PreAllocString&) = 0;
+    NO_COPY_INSTANCE(PreAllocString)
 
     /* Current number of characters in string */
     size_t GetLength() const {
