@@ -37,13 +37,32 @@ class PreAllocString {
     }
 
     /* Empty the string , set length field to zero */
-    void Empty();
+    void Empty() {
+      DEBUG("Empty");
+      for (size_t pos = 0; pos < SizeOf(); pos++) {
+        m_content[pos] = '\0';
+      }
+      m_next_writable = &m_content[0];
+    }
 
     /* insert formated string */
-    void AddFormat(const char * format, ...);
+    void AddFormat(const char * format, ...) {
+      va_list args;
+      va_start(args, format);
+      m_next_writable = Printf(m_next_writable, (&(m_content[SIZE])), format, args);
+      m_next_writable--; //directly at \0 not after
+      va_end(args);
+    }
 
     /* insert one whitespace character */
-    void AddWhiteSpace();
+    void AddWhiteSpace() {
+      if(m_next_writable >= m_content + SizeOf()) {
+        return;
+      }
+      *m_next_writable = ' ';
+      m_next_writable++;
+      /* no need to insert \0, since it was already set at Empty */
+    }
 
     /* operators */
     /* const char* cast */
@@ -102,7 +121,5 @@ class PreAllocString {
     char m_content[SIZE];
     char* m_next_writable;
 };
-
-#include "../src/PreAllocString.tcc"
 
 #endif
