@@ -15,13 +15,17 @@ int main() {
   DEBUG("length: " << s_256.GetLength());
   s_256.Empty();
   DEBUG("length: " << s_256.GetLength());
+  s_256.AddFormat("asd %s ;;", "hallo");
+  DEBUG("length: " << s_256.GetLength());
+  DEBUG("raw: " << s_256.raw());
 
+/*
   DEBUG("");
   CREATE(s_512, 512);
   DEBUG("size: " << s_512.SizeOf());
   DEBUG("length: " << s_512.GetLength());
 
-  //PreAllocString<128> s_128 = s_512; /* type crash */
+  //PreAllocString<128> s_128 = s_512; // type crash
 
   DEBUG("");
   //copy constructor
@@ -35,6 +39,6 @@ int main() {
   DEBUG("size: " << s.SizeOf());
   DEBUG("length: " << s.GetLength());
 
-
+*/
   return 0;
 }

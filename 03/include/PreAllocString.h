@@ -4,6 +4,8 @@
 #include <cstddef>
 
 #include "debug.h"
+#include "Printf.h"
+
 
 
 /*
@@ -28,6 +30,8 @@ class PreAllocString {
       DEBUG("New PreAllocString of SIZE " << SIZE);
       Empty();
     }
+
+    //PreAllocString(const PreAllocString&) = 0;
 
     /* Current number of characters in string */
     size_t GetLength() const {
@@ -59,6 +63,10 @@ class PreAllocString {
 
     PreAllocString& operator+=(char rhs);
     PreAllocString& operator+=(char const* rhs);
+
+    const char* raw() {
+      return &m_content[0];
+    }
 
   protected:
 
