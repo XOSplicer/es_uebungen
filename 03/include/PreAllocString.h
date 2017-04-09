@@ -26,7 +26,7 @@ class PreAllocString {
   public:
 
     PreAllocString()
-    : m_length(0) {
+    /*:*/ {
       DEBUG("New PreAllocString of SIZE " << SIZE);
       Empty();
     }
@@ -35,7 +35,7 @@ class PreAllocString {
 
     /* Current number of characters in string */
     size_t GetLength() const {
-      return m_length;
+      return m_next_writable - &m_content[0];
     }
 
     /* Maximum number of characters possible */
@@ -71,7 +71,6 @@ class PreAllocString {
   protected:
 
   private:
-    size_t m_length;
     const size_t m_size = SIZE;
     char m_content[SIZE];
     char* m_next_writable;
