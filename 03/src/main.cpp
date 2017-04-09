@@ -34,7 +34,13 @@ int main() {
   DEBUG("add string");
   s_128 += "hjkl";
   DEBUG("const char* cast: " << (const char*)s_128);
+  DEBUG("const void* cast: " << (const void*) s_128);
 
+  CREATE(s_64, 64);
+  /* probably uses assignment with (const char*)s_128 as rhs */
+  s_64 = s_128;
+  s_64.AddFormat("%c", 'X');
+  DEBUG("const char* cast: " << (const char*)s_64);
 
 /*
   DEBUG("");
