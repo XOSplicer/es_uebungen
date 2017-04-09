@@ -7,10 +7,6 @@
 #include "util.h"
 #include "Printf.h"
 
-/*
-TODO fix copy constructor
- */
-
 #define CREATE(varName, size)\
   PreAllocString<size> varName;
 
@@ -18,8 +14,7 @@ template<size_t SIZE>
 class PreAllocString {
   public:
 
-    PreAllocString()
-    /*:*/ {
+    PreAllocString() {
       DEBUG("New PreAllocString of SIZE " << SIZE);
       Empty();
     }
@@ -47,6 +42,7 @@ class PreAllocString {
 
     /* insert formated string */
     void AddFormat(const char * format, ...) {
+      DEBUG("AddFormat: " << format);
       va_list args;
       va_start(args, format);
       m_next_writable = Printf(m_next_writable, (&(m_content[SIZE])), format, args);
@@ -59,6 +55,7 @@ class PreAllocString {
       if(m_next_writable >= m_content + SizeOf()) {
         return;
       }
+      DEBUG("AddWhiteSpace");
       *m_next_writable = ' ';
       m_next_writable++;
       /* no need to insert \0, since it was already set at Empty */
