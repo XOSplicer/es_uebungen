@@ -2,10 +2,10 @@
  * @author Felix Stegmaier
  */
 
-#define ENABLE_DEBUG
-
 #ifndef DEBUG_H
 #define DEBUG_H
+
+//#define ENABLE_DEBUG
 
 #ifdef ENABLE_DEBUG
 #include <iostream>
