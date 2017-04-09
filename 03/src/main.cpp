@@ -17,7 +17,24 @@ int main() {
   DEBUG("length: " << s_256.GetLength());
   s_256.AddFormat("asd %s ;;", "hallo");
   DEBUG("length: " << s_256.GetLength());
-  DEBUG("raw: " << s_256.raw());
+  DEBUG("const char* cast: " << (const char*)s_256);
+  DEBUG("indexing: " << s_256[2]);
+
+  DEBUG("create");
+  CREATE(s_128, 128);
+  DEBUG("assign char");
+  s_128 = 'a';
+  DEBUG("const char* cast: " << (const char*)s_128);
+  DEBUG("assign string");
+  s_128 = "asdf";
+  DEBUG("const char* cast: " << (const char*)s_128);
+  DEBUG("add char");
+  s_128 += 'g';
+  DEBUG("const char* cast: " << (const char*)s_128);
+  DEBUG("add string");
+  s_128 += "hjkl";
+  DEBUG("const char* cast: " << (const char*)s_128);
+
 
 /*
   DEBUG("");

@@ -58,10 +58,10 @@ char* Printf(char* dst, const void* end, const char* fmt, va_list args) {
       || !end
       || !fmt
       || end <= dst) {
-    DEBUG("printf illegal");
+    //DEBUG("printf illegal");
     return nullptr;
     }
-  DEBUG("printf");
+  //DEBUG("printf");
 
   char* next_writable = dst;
   //va_list args;

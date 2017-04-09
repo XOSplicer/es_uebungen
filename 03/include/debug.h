@@ -9,7 +9,7 @@
 
 #ifdef ENABLE_DEBUG
 #include <iostream>
-#define DEBUG(x) std::cerr << "DEBUG: " << x << std::endl
+#define DEBUG(x) std::cerr << "DEBUG: " << x << std::endl;
 #else
 #define DEBUG(x)
 #endif

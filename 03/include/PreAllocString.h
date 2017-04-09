@@ -6,17 +6,9 @@
 #include "debug.h"
 #include "Printf.h"
 
-
-
 /*
 TODO fix copy constructor
-TODO implement things
-TODO import the Printf
  */
-
-
-
-
 
 #define CREATE(varName, size)\
   PreAllocString<size> varName;
@@ -53,18 +45,52 @@ class PreAllocString {
     void AddWhiteSpace();
 
     /* operators */
-    operator const char *() const;
-    operator const void *() const;
-    const char& operator[](const int idx);
+    /* const char* cast */
+    operator const char*() const {
+      return raw();
+    }
 
-    PreAllocString& operator=(char rhs);
-    PreAllocString& operator=(const char* rhs);
-    PreAllocString& operator=(char* const rhs);
+    /* const void* cast */
+    operator const void*() const {
+      return raw();
+    }
 
-    PreAllocString& operator+=(char rhs);
-    PreAllocString& operator+=(char const* rhs);
+    /* indexing to get char*/
+    const char& operator[](const int idx) {
+      return m_content[idx];
+    }
 
-    const char* raw() {
+    /* assignment operators */
+    PreAllocString& operator=(char rhs) {
+      Empty();
+      AddFormat("%c", rhs);
+      return *this;
+    }
+
+    PreAllocString& operator=(const char* rhs) {
+        Empty();
+        AddFormat("%s", rhs);
+        return *this;
+    }
+
+    PreAllocString& operator=(char* const rhs) {
+      Empty();
+      AddFormat("%s", rhs);
+      return *this;
+    }
+
+    PreAllocString& operator+=(char rhs) {
+      AddFormat("%c", rhs);
+      return *this;
+    }
+
+    PreAllocString& operator+=(char const* rhs) {
+      AddFormat("%s", rhs);
+      return *this;
+    }
+
+  private:
+    const char* raw() const {
       return &m_content[0];
     }
 

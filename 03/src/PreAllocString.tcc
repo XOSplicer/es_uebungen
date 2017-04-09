@@ -16,8 +16,9 @@ void PreAllocString<SIZE>::AddFormat(const char * format, ...) {
   va_list args;
   va_start(args, format);
   m_next_writable = Printf(m_next_writable, (&(m_content[SIZE])), format, args);
-  int r = m_next_writable? 1 : 0;
-  DEBUG("Add Format Printf return: " << r);
+  m_next_writable--; //directly at \0 not after
+  //int r = m_next_writable? 1 : 0;
+  //DEBUG("Add Format Printf return: " << r);
   va_end(args);
 }
 
@@ -26,8 +27,8 @@ void PreAllocString<SIZE>::AddWhiteSpace() {
   if(m_next_writable >= m_content + SizeOf()) {
     return;
   }
-  *m_next_writable = 's';
+  *m_next_writable = ' ';
   m_next_writable++;
   /* no need to insert \0, since it was already set at Empty */
-  DEBUG("content: " << m_content);
+  //DEBUG("content: " << m_content);
 }
