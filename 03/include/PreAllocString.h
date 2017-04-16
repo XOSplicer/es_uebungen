@@ -14,9 +14,9 @@ template<size_t SIZE>
 class PreAllocString {
   public:
 
-    PreAllocString() {
-      DEBUG("New PreAllocString of SIZE " << SIZE);
-      Empty();
+    constexpr PreAllocString()
+      : m_content{0}, m_next_writable(&m_content[0]) {
+        DEBUG("New PreAllocString<" << SIZE << ">");
     }
 
     NO_COPY_INSTANCE(PreAllocString)
