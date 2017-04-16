@@ -16,7 +16,8 @@ class PreAllocString {
 
     constexpr PreAllocString()
       : m_content{0}, m_next_writable(&m_content[0]) {
-        DEBUG("New PreAllocString<" << SIZE << ">");
+        //DEBUG("New PreAllocString<" << SIZE << ">"); //not constexpr
+        static_assert(SIZE >= 1, "Illegal string length!");
     }
 
     NO_COPY_INSTANCE(PreAllocString)
@@ -27,8 +28,8 @@ class PreAllocString {
     }
 
     /* Maximum number of characters possible */
-    constexpr size_t SizeOf() {
-      return m_size;
+    constexpr size_t SizeOf() const {
+      return SIZE;
     }
 
     /* Empty the string , set length field to zero */
@@ -114,7 +115,6 @@ class PreAllocString {
   protected:
 
   private:
-    const size_t m_size = SIZE;
     char m_content[SIZE];
     char* m_next_writable;
 };

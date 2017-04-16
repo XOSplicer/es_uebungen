@@ -6,6 +6,7 @@
 #include "debug.h"
 
 int main() {
+
   CREATE(s_256, 256);
   DEBUG("size: " << s_256.SizeOf());
   DEBUG("length: " << s_256.GetLength());
