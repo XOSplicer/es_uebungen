@@ -8,19 +8,25 @@
 #include "Printf.h"
 
 #define CREATE(varName, size)\
-  PreAllocString<size> varName;
+  PreAllocString<size> varName; varName.init();
 
 template<size_t SIZE>
 class PreAllocString {
   public:
 
     constexpr PreAllocString()
-      : m_content{0}, m_next_writable(&m_content[0]) {
+      : m_content{0}, m_next_writable(nullptr) {
         //DEBUG("New PreAllocString<" << SIZE << ">"); //not constexpr
         static_assert(SIZE >= 1, "Illegal string length!");
     }
 
     NO_COPY_INSTANCE(PreAllocString)
+
+    void init() {
+      if(!m_next_writable) {
+        m_next_writable = &m_content[0];
+      }
+    }
 
     /* Current number of characters in string */
     size_t GetLength() const {
