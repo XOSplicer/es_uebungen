@@ -25,6 +25,14 @@ struct BlockInfo {
   bool taken;
   bool first;
   uint8_t* start;
+  uint8_t* chunk_end; /* start of next taken chunk of blocks,
+                        only valid if first is set */
+  void debug() {
+    DEBUG("BlockInfo[taken=" << taken
+            << ", first=" << first
+            << ", start=" << (void*) start
+            << ", chunk_end=" << (void*) chunk_end <<"]");
+  }
 };
 
 class BaseHeap
@@ -40,9 +48,16 @@ class BaseHeap
           m_map[block].taken = false;
           m_map[block].first = false;
           m_map[block].start = memory + (block * block_size);
-          DEBUG("Memory Block " << block << " at " << (void*) m_map[block].start);
+          m_map[block].chunk_end = nullptr;
+          //m_map[block].debug();
         }
         m_map[0].first = true;
+        m_map[0].chunk_end = memory + block_count * block_size;
+
+        DEBUG("first chunk:");
+        m_map[0].debug();
+        DEBUG("last block:");
+        m_map[block_count-1].debug();
       }
 
     void* Allocate(size_t sizeInBytes);
@@ -54,11 +69,11 @@ class BaseHeap
 
   private:
     /* bytewise memory, will by only given out as blocks of blocksize */
-    uint8_t* m_mem;
+    uint8_t* const m_mem;
     /* bitmap of blocks, true=alocated, false=free */
-    BlockInfo* m_map;
-    size_t m_block_count;
-    size_t m_block_size;
+    BlockInfo* const m_map;
+    const size_t m_block_count;
+    const size_t m_block_size;
 
 };
 
