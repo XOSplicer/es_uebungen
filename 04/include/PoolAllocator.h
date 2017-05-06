@@ -69,8 +69,13 @@ class BaseHeap
 
   private:
     BlockInfo* find_first_of_chunk(void* somewhere);
-    void mark_chunk_as_free(BlockInfo* first_block);
-    void merge_free_chunks(BlockInfo* new_free);
+    void mark_chunk_as(BlockInfo* first_block, bool taken);
+    void merge_free_chunks(BlockInfo* middle_first);
+    void merge_free_chunks_right(BlockInfo* middle_first);
+    void merge_free_chunks_left(BlockInfo* middle_first);
+    BlockInfo* find_first_fit(size_t bytes);
+    void split_chunk(BlockInfo* first_block, size_t blocks_in_first);
+
 
   private:
     /* bytewise memory, will by only given out as blocks of blocksize */

@@ -11,11 +11,15 @@ int main() {
 
   DEBUG("test1")
   CREATE(test1, 1024, sizeof(int));
-  DEBUG("available: " << test1.Available());
+  DEBUG("available: " << test1.Available() << "\n");
   int* al1 = static_cast<int*>(test1.Allocate(32*sizeof(int)));
-  DEBUG("available: " << test1.Available());
-  test1.Deallocate(al1+5);
-  DEBUG("available: " << test1.Available());
+  DEBUG("available: " << test1.Available() << "\n");
+  int* al2 = static_cast<int*>(test1.Allocate(64*sizeof(int)));
+  DEBUG("available: " << test1.Available() << "\n");
+  test1.Deallocate(al1);
+  DEBUG("available: " << test1.Available() << "\n");
+  test1.Deallocate(al2);
+  DEBUG("available: " << test1.Available() << "\n");
 /*
   DEBUG("test2");
   CREATE(test2, 551, sizeof(long));
