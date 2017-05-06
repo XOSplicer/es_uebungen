@@ -14,9 +14,9 @@ int main() {
   DEBUG("available: " << test1.Available());
   int* al1 = static_cast<int*>(test1.Allocate(32*sizeof(int)));
   DEBUG("available: " << test1.Available());
-  test1.Deallocate(al1);
+  test1.Deallocate(al1+5);
   DEBUG("available: " << test1.Available());
-
+/*
   DEBUG("test2");
   CREATE(test2, 551, sizeof(long));
   DEBUG("available: " << test2.Available());
@@ -24,5 +24,6 @@ int main() {
   DEBUG("available: " << test2.Available());
   test2.Deallocate(al2);
   DEBUG("available: " << test2.Available());
+  */
   return 0;
 }

@@ -68,6 +68,11 @@ class BaseHeap
   protected:
 
   private:
+    BlockInfo* find_first_of_chunk(void* somewhere);
+    void mark_chunk_as_free(BlockInfo* first_block);
+    void merge_free_chunks(BlockInfo* new_free);
+
+  private:
     /* bytewise memory, will by only given out as blocks of blocksize */
     uint8_t* const m_mem;
     /* bitmap of blocks, true=alocated, false=free */
