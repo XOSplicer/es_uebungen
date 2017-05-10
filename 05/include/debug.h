@@ -5,7 +5,7 @@
 #ifndef DEBUG_H
 #define DEBUG_H
 
-//#define ENABLE_DEBUG
+#define ENABLE_DEBUG
 
 #ifdef ENABLE_DEBUG
 #include <iostream>

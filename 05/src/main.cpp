@@ -1,0 +1,28 @@
+/**
+ * @author Felix Stegmaier
+ */
+
+#include "Communication.h"
+#include "debug.h"
+
+int main(int argc, char const *argv[]) {
+  if (2 != argc) {
+    DEBUG("options: -s : server mode -c : client mode");
+    DEBUG("sizeof(ClientServer::Packet)=" << sizeof(ClientServer::Packet));
+    DEBUG("sizeof(ClientServer::Command)=" << sizeof(ClientServer::Command));
+    return 1;
+  }
+  ClientServer client_server;
+  if ('-' == argv[1][0]
+      && 's' == argv[1][1]) {
+    return client_server.Start(ClientServer::Mode::Server, 9000, "127.0.0.1")
+      ? 0 : 2 ;
+  } else if ('-' == argv[1][0]
+      && 'c' == argv[1][1]) {
+    return client_server.Start(ClientServer::Mode::Client, 9000, "127.0.0.1")
+      ? 0 : 2;
+  } else {
+    DEBUG("options: -s : server mode -c : client mode");
+    return 1;
+  }
+}
