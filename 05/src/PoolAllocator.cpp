@@ -28,7 +28,8 @@ BlockInfo* BaseHeap::find_first_fit(size_t bytes) {
   }
   for (BlockInfo* block = m_map; block!=&m_map[m_block_count-1]; block++) {
     if (block->first
-        && ((block->chunk_end) - (block->start) >= static_cast<int>(bytes))) {
+        && ((block->chunk_end) - (block->start) >= static_cast<int>(bytes))
+        && !(block->taken)) {
       DEBUG("Found chunk starting at:");
       block->debug();
       return block;

@@ -10,6 +10,9 @@ int main(int argc, char const *argv[]) {
     DEBUG("options: -s : server mode -c : client mode");
     DEBUG("sizeof(ClientServer::Packet)=" << sizeof(ClientServer::Packet));
     DEBUG("sizeof(ClientServer::Command)=" << sizeof(ClientServer::Command));
+    DEBUG("MAX_PAYLOAD_LENGTH=" << ClientServer::MAX_PAYLOAD_LENGTH);
+    uint16_t data[2] = {6, 7};
+    DEBUG("sizeof(uint16_t data[2])=" << sizeof(data));
     return 1;
   }
   ClientServer client_server;
