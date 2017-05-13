@@ -149,7 +149,8 @@ class ClientServer {
     bool SendAckWrapper(uint16_t recieved_seq, uint16_t seq_number);
     bool SendNackWrapper(uint16_t recieved_seq, uint16_t seq_number);
     bool SendDataWrapper(const Packet* packet, uint16_t seq_number);
-    //TODO the recievings
+    /* blocking */
+    bool RecvWrapper(Wrapper* buffer, uint16_t ack_expected_number);
     /* will not convert possible packet */
     void HostToNetWrapper(Wrapper* wrapper);
     /* will not convert possible packet */

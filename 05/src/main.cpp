@@ -11,8 +11,6 @@ int main(int argc, char const *argv[]) {
     DEBUG("sizeof(ClientServer::Packet)=" << sizeof(ClientServer::Packet));
     DEBUG("sizeof(ClientServer::Command)=" << sizeof(ClientServer::Command));
     DEBUG("MAX_PAYLOAD_LENGTH=" << ClientServer::MAX_PAYLOAD_LENGTH);
-    uint16_t data[2] = {6, 7};
-    DEBUG("sizeof(uint16_t data[2])=" << sizeof(data));
     DEBUG("Command::ShutdownReply=" << static_cast<uint16_t>(ClientServer::Command::ShutdownReply));
     return 1;
   }
