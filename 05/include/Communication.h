@@ -110,7 +110,7 @@ class ClientServer {
       MAX_TRANSMISSION_LENGTH - sizeof(Wrapper);
     static constexpr uint16_t MAX_PAYLOAD_LENGTH =
       MAX_PACKET_LENGTH - sizeof(Packet);
-    static constexpr int MAX_SEND_RETRIES = 10;
+    static constexpr size_t MAX_SEND_RETRIES = 10;
 
   public:
     ClientServer()
@@ -134,7 +134,7 @@ class ClientServer {
     bool CreatePacket(Packet* buffer, u_int16_t payloadLength,
                       uint16_t sequenceNumber, Command command,
                       uint16_t handle, const void* data_buf);
-    bool SendPacket(Packet* packet);
+    bool SendPacket(const Packet* packet);
     /* blocking */
     bool RecvPacket(Packet* buffer);
     /* will not convert payload */
@@ -149,13 +149,14 @@ class ClientServer {
     bool SendAckWrapper(uint16_t recieved_seq, uint16_t seq_number);
     bool SendNackWrapper(uint16_t recieved_seq, uint16_t seq_number);
     bool SendDataWrapper(const Packet* packet, uint16_t seq_number);
-    /* blocking */
+    /* blocking and validating */
     bool RecvWrapper(Wrapper* buffer, uint16_t ack_expected_number);
     /* will not convert possible packet */
     void HostToNetWrapper(Wrapper* wrapper);
     /* will not convert possible packet */
     void NetToHostWrapper(Wrapper* wrapper);
     uint16_t NextWrapperNumber();
+    void DebugWrapper(const Wrapper* wrapper);
 
   private:
     PoolAllocator<10, MAX_PACKET_LENGTH> m_packet_buffer;

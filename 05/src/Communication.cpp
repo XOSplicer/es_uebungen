@@ -290,21 +290,30 @@ bool ClientServer::CreatePacket(Packet* buffer, u_int16_t payloadLength,
   return true;
 }
 
-bool ClientServer::SendPacket(Packet* packet) {
+bool ClientServer::SendPacket(const Packet* packet) {
   if (!packet) {
     return false;
   }
-  //TODO implement safety mechanism here
-  HostToNetPacket(packet);
-  auto size = sizeof(ClientServer::Packet) + packet->payloadLength;
-  if(sendto(m_socket, packet, size, 0,
-     reinterpret_cast<sockaddr*>(&m_other_addr), sizeof(m_other_addr)) < 0) {
-    DEBUG("sendto failed");
-    return false;
+  uint8_t buf[MAX_TRANSMISSION_LENGTH];
+  Wrapper* recv_buf = reinterpret_cast<Wrapper*>(buf);
+  for (size_t retries = 0; retries < MAX_SEND_RETRIES; retries++) {
+    uint16_t send_seq = NextWrapperNumber();
+    if (!SendDataWrapper(packet, send_seq)) {
+      DEBUG("Failed to send Wrapper, retrying " << retries+1 << "/" << MAX_SEND_RETRIES);
+      usleep(10);
+      continue;
+    }
+    if (!RecvWrapper(recv_buf, send_seq)
+        || static_cast<uint16_t>(WrapperType::ACK) != recv_buf->type) {
+      DEBUG("Failed to recieve Wrapper, retrying " << retries+1 << "/" << MAX_SEND_RETRIES);
+      usleep(10);
+      continue;
+    }
+    /* went well */
+    return true;
   }
-  NetToHostPacket(packet); /* also revert, so we can keep on using it */
-  /* all went well */
-  return true;
+  /* looped to long, failure */
+  return false;
 }
 
 /* blocking */
@@ -312,47 +321,21 @@ bool ClientServer::RecvPacket(Packet* buffer) {
   if (!buffer) {
     return false;
   }
-
-  sockaddr_in recv_addr;
-  socklen_t recv_addr_len = sizeof(recv_addr);
-  int recv_len;
-
-  //TODO implement safety mechanism here
-  if (Mode::Server == m_mode) {
-    recv_len = recvfrom(m_socket, buffer, MAX_PACKET_LENGTH, 0,
-                        reinterpret_cast<sockaddr*>(&recv_addr),
-                        &recv_addr_len);
-    //TODO maybe check for payload len aswell
-    if (recv_len < static_cast<int>(sizeof(ClientServer::Packet))) {
+  uint8_t buf[MAX_TRANSMISSION_LENGTH];
+  Wrapper* recv_buf = reinterpret_cast<Wrapper*>(buf);
+  if (!RecvWrapper(recv_buf, 0)
+      || static_cast<uint16_t>(WrapperType::ACK) != recv_buf->type) {
+    if (!SendNackWrapper(recv_buf->sequenceNumber, NextWrapperNumber())) {
       return false;
     }
-
-    /* copy recieved addr to other_addr here */
-    memcpy(&m_other_addr, &recv_addr, sizeof(recv_addr));
-
-    NetToHostPacket(buffer);
-
-    /* all went well */
-    return true; /* end server */
-  } else if (Mode::Client == m_mode) {
-    recv_len = recvfrom(m_socket, buffer, MAX_PACKET_LENGTH, 0,
-                        reinterpret_cast<sockaddr*>(&recv_addr),
-                        &recv_addr_len);
-    //TODO maybe check for payload len aswell
-    if (recv_len < static_cast<int>(sizeof(ClientServer::Packet))) {
-      return false;
-    }
-
-    /* do not copy recieved addr to other_addr here */
-    //TODO chech if other addr == recieved addr to increase security
-
-    NetToHostPacket(buffer);
-
-    /* all went well */
-    return true; /* end client */
   } else {
-    return false;
+    if (!SendAckWrapper(recv_buf->sequenceNumber, NextWrapperNumber())) {
+      return false;
+    }
   }
+
+  /* all went well */
+  return true;
 }
 
 /* will not convert payload */
@@ -404,36 +387,58 @@ uint16_t ClientServer::PacketChecksum(const Packet* packet) {
 
 bool ClientServer::ValidateWrapper(const Wrapper* wrapper, ssize_t bytes_recieved,
                                     uint16_t ack_expected_number) {
-  if(!wrapper
-      || bytes_recieved < static_cast<ssize_t>(sizeof(Wrapper))
-      || wrapper->totalLength != bytes_recieved) {
+  DEBUG("Validating wrapper:");
+  DebugWrapper(wrapper);
+  if (!wrapper) {
+    return false;
+  }
+  if (bytes_recieved < static_cast<ssize_t>(sizeof(Wrapper))) {
+    DEBUG("To few bytes recieved");
+    return false;
+  }
+  if (wrapper->totalLength != bytes_recieved) {
+    DEBUG("Bytes recieved not matching totalLength");
     return false;
   }
   switch (wrapper->type) {
-    case static_cast<WrapperType>(WrapperType::ACK): {
-      if(wrapper->totalLength != sizeof(Wrapper)
-          || wrapper->ackNumber != ack_expected_number
-          || wrapper->packetChecksum != 0) {
+    case static_cast<WrapperType>(WrapperType::ACK): /* fallthrough */
+    case static_cast<WrapperType>(WrapperType::NACK): {
+      DEBUG("Validating for ACK / NACK");
+      if (wrapper->totalLength != sizeof(Wrapper)) {
+        DEBUG("Incorrect length");
         return false;
       }
-    } break;
-    case static_cast<WrapperType>(WrapperType::NACK): {
-      if(wrapper->totalLength != sizeof(Wrapper)
-          || wrapper->ackNumber != ack_expected_number
-          || wrapper->packetChecksum != 0) {
+      if (wrapper->ackNumber != ack_expected_number) {
+        DEBUG("Incorrect ackNumber");
+        return false;
+      }
+      if (wrapper->packetChecksum != 0) {
+        DEBUG("Wrong checksum");
         return false;
       }
     } break;
     case static_cast<WrapperType>(WrapperType::DATA): {
-      if(wrapper->totalLength != sizeof(Wrapper) + sizeof(Packet) + wrapper->packet->payloadLength
-          || wrapper->ackNumber != 0
-          || wrapper->packetChecksum != PacketChecksum(wrapper->packet)) {
+      DEBUG("Validating for DATA");
+      if (wrapper->totalLength !=
+            sizeof(Wrapper) + sizeof(Packet) + wrapper->packet->payloadLength) {
+        DEBUG("Incorrect totalLength");
+        return false;
+      }
+      if (wrapper->ackNumber != 0) {
+        DEBUG("Wrong ackNumber");
+        return false;
+      }
+      if (wrapper->packetChecksum != PacketChecksum(wrapper->packet)) {
+        DEBUG("Incorrect checksum compare");
         return false;
       }
     } break;
-    default:
+    default: {
+      DEBUG("Invalid type");
       return false;
+    }
   }
+  DEBUG("Valid packet");
   return true;
 }
 
@@ -445,6 +450,8 @@ bool ClientServer::SendAckWrapper(uint16_t recieved_seq, uint16_t seq_number) {
   wrapper.packetChecksum  = 0;
   wrapper.type            = static_cast<uint16_t>(WrapperType::ACK);
   auto size = wrapper.totalLength;
+  DEBUG("sending wrapper:");
+  DebugWrapper(&wrapper);
   HostToNetWrapper(&wrapper);
   if(sendto(m_socket, &wrapper, size, 0,
      reinterpret_cast<sockaddr*>(&m_other_addr), sizeof(m_other_addr)) < 0) {
@@ -462,6 +469,8 @@ bool ClientServer::SendNackWrapper(uint16_t recieved_seq, uint16_t seq_number) {
   wrapper.packetChecksum        = 0;
   wrapper.type            = static_cast<uint16_t>(WrapperType::NACK);
   auto size = wrapper.totalLength;
+  DEBUG("sending wrapper:");
+  DebugWrapper(&wrapper);
   HostToNetWrapper(&wrapper);
   if(sendto(m_socket, &wrapper, size, 0,
      reinterpret_cast<sockaddr*>(&m_other_addr), sizeof(m_other_addr)) < 0) {
@@ -484,6 +493,8 @@ bool ClientServer::SendDataWrapper(const Packet* packet, uint16_t seq_number) {
   wrapper->type           = static_cast<uint16_t>(WrapperType::DATA);
   memcpy(wrapper->packet, packet, sizeof(Packet) + packet->payloadLength);
   auto size = wrapper->totalLength;
+  DEBUG("sending wrapper:");
+  DebugWrapper(wrapper);
   HostToNetPacket(wrapper->packet);
   HostToNetWrapper(wrapper);
   if(sendto(m_socket, wrapper, size, 0,
@@ -494,7 +505,7 @@ bool ClientServer::SendDataWrapper(const Packet* packet, uint16_t seq_number) {
   return true;
 }
 
-/* blocking */
+/* blocking and validating */
 bool ClientServer::RecvWrapper(Wrapper* buffer, uint16_t ack_expected_number) {
   if(!buffer) {
     return false;
@@ -505,11 +516,13 @@ bool ClientServer::RecvWrapper(Wrapper* buffer, uint16_t ack_expected_number) {
                                   reinterpret_cast<sockaddr*>(&recv_addr),
                                   &recv_addr_len);
   NetToHostWrapper(buffer);
+  DEBUG("recieved wrapper:");
+  DebugWrapper(buffer);
   if (static_cast<uint16_t>(WrapperType::DATA) == buffer->type) {
     NetToHostPacket(buffer->packet);
   }
   if (Mode::Server == m_mode) {
-    /* hopefuly we only talk to one person */
+    /* hopefully we only talk to one person */
     memcpy(&m_other_addr, &recv_addr, sizeof(recv_addr));
   }
   return ValidateWrapper(buffer, recieved_bytes, ack_expected_number);
@@ -541,6 +554,21 @@ void ClientServer::NetToHostWrapper(Wrapper* wrapper) {
 
 uint16_t ClientServer::NextWrapperNumber() {
   return m_wrapper_number++;
+}
+
+void ClientServer::DebugWrapper(const Wrapper* wrapper) {
+  if(!wrapper) {
+    return;
+  }
+  DEBUG("Wrapper[totalLength=" << wrapper->totalLength
+          << ", sequenceNumber=" << wrapper->sequenceNumber
+          << ", ackNumber=" << wrapper->ackNumber
+          << ", packetChecksum=" << wrapper->packetChecksum
+          << ", type=" << static_cast<int>(wrapper->type) << "]");
+  if (wrapper->type == static_cast<uint16_t>(WrapperType::DATA)) {
+    DEBUG("with data:");
+    DebugPacket(wrapper->packet);
+  }
 }
 
 uint16_t fletcher_16 (const uint8_t* data, const size_t length) {
