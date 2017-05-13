@@ -186,6 +186,30 @@ bool ClientServer::RecvPacket(Packet* buffer) {
   return true;
 }
 
+/** will not convert payload */
+void HostToNetPacket(Packet* packet) {
+  if (!packet) {
+    return
+  }
+  /* htons converts host to net uint16_t */
+  packet->payloadLength   = htons(packet->payloadLength);
+  packet->sequenceNumber  = htons(packet->sequenceNumber);
+  packet->command         = htons(packet->command);
+  packet->handle          = htons(packet->handle);
+}
+
+/** will not convert payload */
+void NetToHostPacket(Packet* packet) {
+  if (!packet) {
+    return
+  }
+  /* htons converts net to host uint16_t */
+  packet->payloadLength   = ntohs(packet->payloadLength);
+  packet->sequenceNumber  = ntohs(packet->sequenceNumber);
+  packet->command         = ntohs(packet->command);
+  packet->handle          = ntohs(packet->handle);
+}
+
 uint16_t ClientServer::NextSequenceNumber() {
   return ++m_sequence_number;
 }

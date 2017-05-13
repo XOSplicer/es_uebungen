@@ -6,6 +6,7 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
+#include <arpa/inet.h>
 
 
 #include "PoolAllocator.h"
@@ -65,6 +66,9 @@ class ClientServer {
                       uint16_t handle, const void* data_buf);
     bool SendPacket(Packet* packet);
     bool RecvPacket(Packet* buffer);
+    /** will not convert payload */
+    void HostToNetPacket(Packet* packet);
+    void NetToHostPacket(Packet* packet);
     uint16_t NextSequenceNumber();
     void DebugPacket(Packet* packet);
 
