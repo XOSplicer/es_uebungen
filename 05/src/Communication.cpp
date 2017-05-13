@@ -186,7 +186,7 @@ bool ClientServer::InitServer(unsigned int port, const char * ip) {
   }
 
   /* step 2 do the bind to server address */
-  if (bind(m_socket, (sockaddr*) &m_my_addr, sizeof(m_my_addr)) < 0) {
+  if (bind(m_socket, reinterpret_cast<sockaddr*>(&m_my_addr), sizeof(m_my_addr)) < 0) {
     DEBUG("Could not bind socket to address");
     return false;
   }
@@ -228,7 +228,7 @@ bool ClientServer::InitClient(unsigned int port, const char * ip) {
   }
 
   /* bind to client addr */
-  if (bind(m_socket, (sockaddr*) &m_my_addr, sizeof(m_my_addr)) < 0) {
+  if (bind(m_socket, reinterpret_cast<sockaddr*>(&m_my_addr), sizeof(m_my_addr)) < 0) {
     DEBUG("Could not bind socket to address");
     return false;
   }
@@ -297,7 +297,8 @@ bool ClientServer::SendPacket(Packet* packet) {
   //TODO implement safety mechanism here
   HostToNetPacket(packet);
   auto size = sizeof(ClientServer::Packet) + packet->payloadLength;
-  if(sendto(m_socket, packet, size, 0, (sockaddr*) &m_other_addr, sizeof(m_other_addr)) < 0) {
+  if(sendto(m_socket, packet, size, 0,
+     reinterpret_cast<sockaddr*>(&m_other_addr), sizeof(m_other_addr)) < 0) {
     DEBUG("sendto failed");
     return false;
   }
@@ -319,7 +320,8 @@ bool ClientServer::RecvPacket(Packet* buffer) {
   //TODO implement safety mechanism here
   if (Mode::Server == m_mode) {
     recv_len = recvfrom(m_socket, buffer, MAX_PACKET_LENGTH, 0,
-                        (sockaddr*) &recv_addr, &recv_addr_len);
+                        reinterpret_cast<sockaddr*>(&recv_addr),
+                        &recv_addr_len);
     //TODO maybe check for payload len aswell
     if (recv_len < static_cast<int>(sizeof(ClientServer::Packet))) {
       return false;
@@ -334,7 +336,8 @@ bool ClientServer::RecvPacket(Packet* buffer) {
     return true; /* end server */
   } else if (Mode::Client == m_mode) {
     recv_len = recvfrom(m_socket, buffer, MAX_PACKET_LENGTH, 0,
-                        (sockaddr*) &recv_addr, &recv_addr_len);
+                        reinterpret_cast<sockaddr*>(&recv_addr),
+                        &recv_addr_len);
     //TODO maybe check for payload len aswell
     if (recv_len < static_cast<int>(sizeof(ClientServer::Packet))) {
       return false;
@@ -377,10 +380,10 @@ void ClientServer::NetToHostPacket(Packet* packet) {
 }
 
 uint16_t ClientServer::NextSequenceNumber() {
-  return ++m_sequence_number;
+  return m_sequence_number++;
 }
 
-void ClientServer::DebugPacket(Packet* packet) {
+void ClientServer::DebugPacket(const Packet* packet) {
   if (!packet) {
     return;
   }
@@ -389,4 +392,134 @@ void ClientServer::DebugPacket(Packet* packet) {
           << ", command=" << packet->command
           << ", handle=" << packet->handle
           << ", data=" << static_cast<const unsigned char*>(packet->data));
+}
+
+uint16_t ClientServer::PacketChecksum(const Packet* packet) {
+  if (!packet) {
+    return 0;
+  }
+  return fletcher_16(reinterpret_cast<const uint8_t*>(packet),
+                      sizeof(Packet) + packet->payloadLength);
+}
+
+bool ClientServer::ValidateWrapper(const Wrapper* wrapper, ssize_t bytes_recieved,
+                                    uint16_t ack_expected_number) {
+  if(!wrapper
+      || bytes_recieved < static_cast<ssize_t>(sizeof(Wrapper))
+      || wrapper->totalLength != bytes_recieved) {
+    return false;
+  }
+  switch (wrapper->type) {
+    case static_cast<WrapperType>(WrapperType::ACK): {
+      if(wrapper->totalLength != sizeof(Wrapper)
+          || wrapper->ackNumber != ack_expected_number
+          || wrapper->packetChecksum != 0) {
+        return false;
+      }
+    } break;
+    case static_cast<WrapperType>(WrapperType::NACK): {
+      if(wrapper->totalLength != sizeof(Wrapper)
+          || wrapper->ackNumber != ack_expected_number
+          || wrapper->packetChecksum != 0) {
+        return false;
+      }
+    } break;
+    case static_cast<WrapperType>(WrapperType::DATA): {
+      if(wrapper->totalLength != sizeof(Wrapper) + sizeof(Packet) + wrapper->packet->payloadLength
+          || wrapper->ackNumber != 0
+          || wrapper->packetChecksum != PacketChecksum(wrapper->packet)) {
+        return false;
+      }
+    } break;
+    default:
+      return false;
+  }
+  return true;
+}
+
+bool ClientServer::SendAckWrapper(uint16_t recieved_seq, uint16_t seq_number) {
+  Wrapper wrapper;
+  wrapper.totalLength     = sizeof(Wrapper);
+  wrapper.sequenceNumber  = seq_number;
+  wrapper.ackNumber       = recieved_seq;
+  wrapper.packetChecksum        = 0;
+  wrapper.type            = static_cast<uint16_t>(WrapperType::ACK);
+  if(sendto(m_socket, &wrapper, wrapper.totalLength, 0,
+     reinterpret_cast<sockaddr*>(&m_other_addr), sizeof(m_other_addr)) < 0) {
+    DEBUG("sendto failed");
+    return false;
+  }
+  return true;
+}
+
+bool ClientServer::SendNackWrapper(uint16_t recieved_seq, uint16_t seq_number) {
+  Wrapper wrapper;
+  wrapper.totalLength     = sizeof(Wrapper);
+  wrapper.sequenceNumber  = seq_number;
+  wrapper.ackNumber       = recieved_seq;
+  wrapper.packetChecksum        = 0;
+  wrapper.type            = static_cast<uint16_t>(WrapperType::NACK);
+  if(sendto(m_socket, &wrapper, wrapper.totalLength, 0,
+     reinterpret_cast<sockaddr*>(&m_other_addr), sizeof(m_other_addr)) < 0) {
+    DEBUG("sendto failed");
+    return false;
+  }
+  return true;
+}
+
+bool ClientServer::SendDataWrapper(const Packet* packet, uint16_t seq_number) {
+  if(!packet) {
+    return false;
+  }
+  uint8_t buffer[MAX_TRANSMISSION_LENGTH] = {0};
+  Wrapper* wrapper        = reinterpret_cast<Wrapper*>(buffer);
+  wrapper->totalLength    = sizeof(Wrapper) + sizeof(Packet) + packet->payloadLength;
+  wrapper->sequenceNumber = seq_number;
+  wrapper->ackNumber      = 0;
+  wrapper->packetChecksum = PacketChecksum(packet);
+  wrapper->type           = static_cast<uint16_t>(WrapperType::DATA);
+  memcpy(wrapper->packet, packet, sizeof(Packet) + packet->payloadLength);
+  if(sendto(m_socket, wrapper, wrapper->totalLength, 0,
+     reinterpret_cast<sockaddr*>(&m_other_addr), sizeof(m_other_addr)) < 0) {
+    DEBUG("sendto failed");
+    return false;
+  }
+  return true;
+}
+
+/* will not convert possible packet */
+void ClientServer::HostToNetWrapper(Wrapper* wrapper) {
+  if (!wrapper) {
+    return;
+  }
+  wrapper->totalLength    = htons(wrapper->totalLength);
+  wrapper->sequenceNumber = htons(wrapper->sequenceNumber);
+  wrapper->ackNumber      = htons(wrapper->ackNumber);
+  wrapper->packetChecksum = htons(wrapper->packetChecksum);
+  /* type must not be reordered */
+}
+
+/* will not convert possible packet */
+void ClientServer::NetToHostWrapper(Wrapper* wrapper) {
+  if (!wrapper) {
+    return;
+  }
+  wrapper->totalLength    = ntohs(wrapper->totalLength);
+  wrapper->sequenceNumber = ntohs(wrapper->sequenceNumber);
+  wrapper->ackNumber      = ntohs(wrapper->ackNumber);
+  wrapper->packetChecksum = ntohs(wrapper->packetChecksum);
+  /* type must not be reordered */
+}
+
+uint16_t ClientServer::NextWrapperNumber() {
+  return m_wrapper_number++;
+}
+
+uint16_t fletcher_16 (const uint8_t* data, const size_t length) {
+    uint16_t sum1 = 0, sum2 = 0;
+    for (size_t i = 0; i < length; i++) {
+        sum1 = (sum1 + data[i]) % 255;
+        sum2 = (sum2 + sum1) % 255;
+    }
+    return (sum2 << 8) | sum1;
 }
