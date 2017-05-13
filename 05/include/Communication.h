@@ -50,7 +50,8 @@ class ClientServer {
       m_sequence_number(0),
       m_socket(-1),
       m_my_addr(),
-      m_other_addr() {}
+      m_other_addr(),
+      m_mode(Mode::Server) {}
     bool Start(Mode mode, unsigned int port, const char * ip);
 
   private:
@@ -79,6 +80,7 @@ class ClientServer {
     uint16_t m_sequence_number;
     int m_socket;
     sockaddr_in m_my_addr, m_other_addr;
+    Mode m_mode;
 };
 
 #endif /* COMMUNICATION_H */

@@ -5,6 +5,7 @@ bool ClientServer::Start(Mode mode, unsigned int port, const char * ip) {
       && !ip) {
     return false;
   } /* ip may be null for server when binding to all interfaces */
+  m_mode = mode;
   if (Mode::Server == mode) {
     return StartServer(port, ip);
   } else if (Mode::Client == mode) {
@@ -28,6 +29,7 @@ bool ClientServer::StartServer(unsigned int port, const char * ip) {
   Packet* send_buf =
     static_cast<Packet*>(m_packet_buffer.Allocate(MAX_PACKET_LENGTH));
 
+  DEBUG("Server running");
   while (running) {
     memset(recv_buf, 0, MAX_PACKET_LENGTH);
     memset(send_buf, 0, MAX_PACKET_LENGTH);
@@ -81,10 +83,36 @@ bool ClientServer::StartClient(unsigned int port, const char * ip) {
     static_cast<Packet*>(m_packet_buffer.Allocate(MAX_PACKET_LENGTH));
   memset(recv_buf, 0, MAX_PACKET_LENGTH);
   memset(send_buf, 0, MAX_PACKET_LENGTH);
+
+  bool running = true;
+  uint16_t handle = 42;
+
+  DEBUG("Client running");
+
   //TODO
   /* arbitrary test commands */
 
   /* ending with server shutdown */
+  while (running) {
+    memset(send_buf, 0, MAX_PACKET_LENGTH);
+    memset(recv_buf, 0, MAX_PACKET_LENGTH);
+    CreatePacket(send_buf, 0, NextSequenceNumber(), Command::Shutdown, handle, nullptr);
+    DEBUG("Sending:");
+    DebugPacket(send_buf);
+    SendPacket(send_buf);
+    RecvPacket(recv_buf);
+    DEBUG("Recieved:");
+    DebugPacket(recv_buf);
+    if (handle == recv_buf->handle
+        && static_cast<uint16_t>(Command::ShutdownReply) == recv_buf->command) {
+      DEBUG("Recieved ShutdownReply");
+      running = false;
+    } else {
+      DEBUG("Did not recieve ShutdownReply");
+    }
+    handle++;
+  }
+
 
   if(!ShutdownClient()) {
     DEBUG("Failed to shut down client");
@@ -238,8 +266,15 @@ bool ClientServer::SendPacket(Packet* packet) {
   if (!packet) {
     return false;
   }
-  //TODO
-  return false;
+  //TODO implement safety mechanism here
+  HostToNetPacket(packet);
+  auto size = sizeof(ClientServer::Packet) + packet->payloadLength;
+  if(sendto(m_socket, packet, size, 0, (sockaddr*) &m_other_addr, sizeof(m_other_addr)) < 0) {
+    DEBUG("sendto failed");
+    return false;
+  }
+  /* all went well */
+  return true;
 }
 
 /* blocking */
@@ -247,12 +282,45 @@ bool ClientServer::RecvPacket(Packet* buffer) {
   if (!buffer) {
     return false;
   }
-  //TODO
-  /* test dummy */
-  char data[16] = "test";
-  return CreatePacket(buffer, sizeof(data), NextSequenceNumber(), Command::Echo, 42, data);
 
-  return false;
+  sockaddr_in recv_addr;
+  socklen_t recv_addr_len = sizeof(recv_addr);
+  int recv_len;
+
+  //TODO implement safety mechanism here
+  if (Mode::Server == m_mode) {
+    recv_len = recvfrom(m_socket, buffer, MAX_PACKET_LENGTH, 0,
+                        (sockaddr*) &recv_addr, &recv_addr_len);
+    //TODO maybe check for payload len aswell
+    if (recv_len < static_cast<int>(sizeof(ClientServer::Packet))) {
+      return false;
+    }
+
+    /* copy recieved addr to other_addr here */
+    memcpy(&m_other_addr, &recv_addr, sizeof(recv_addr));
+
+    NetToHostPacket(buffer);
+
+    /* all went well */
+    return true; /* end server */
+  } else if (Mode::Client == m_mode) {
+    recv_len = recvfrom(m_socket, buffer, MAX_PACKET_LENGTH, 0,
+                        (sockaddr*) &recv_addr, &recv_addr_len);
+    //TODO maybe check for payload len aswell
+    if (recv_len < static_cast<int>(sizeof(ClientServer::Packet))) {
+      return false;
+    }
+
+    /* do not copy recieved addr to other_addr here */
+    //TODO chech if other addr == recieved addr to increase security
+
+    NetToHostPacket(buffer);
+
+    /* all went well */
+    return true; /* end client */
+  } else {
+    return false;
+  }
 }
 
 /* will not convert payload */
