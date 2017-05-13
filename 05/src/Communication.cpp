@@ -38,13 +38,13 @@ bool ClientServer::StartServer(unsigned int port, const char * ip) {
       DEBUG("Failed to recieve packet");
       continue;
     }
-    DEBUG("Recieved:");
+    DEBUG("Server recieved packet:");
     DebugPacket(recv_buf);
     if (!ServerCreateResponse(send_buf, recv_buf)) {
       DEBUG("Failed to create response");
       continue;
     }
-    DEBUG("Sending:");
+    DEBUG("Server sending packet:");
     DebugPacket(send_buf);
     if (!SendPacket(send_buf)) {
       DEBUG("Failed to send response");
@@ -324,7 +324,7 @@ bool ClientServer::RecvPacket(Packet* buffer) {
   uint8_t buf[MAX_TRANSMISSION_LENGTH];
   Wrapper* recv_buf = reinterpret_cast<Wrapper*>(buf);
   if (!RecvWrapper(recv_buf, 0)
-      || static_cast<uint16_t>(WrapperType::ACK) != recv_buf->type) {
+      || static_cast<uint16_t>(WrapperType::DATA) != recv_buf->type) {
     if (!SendNackWrapper(recv_buf->sequenceNumber, NextWrapperNumber())) {
       return false;
     }
@@ -333,7 +333,7 @@ bool ClientServer::RecvPacket(Packet* buffer) {
       return false;
     }
   }
-
+  memcpy(buffer, recv_buf->packet, recv_buf->packet->payloadLength + sizeof(Packet));
   /* all went well */
   return true;
 }
@@ -516,11 +516,12 @@ bool ClientServer::RecvWrapper(Wrapper* buffer, uint16_t ack_expected_number) {
                                   reinterpret_cast<sockaddr*>(&recv_addr),
                                   &recv_addr_len);
   NetToHostWrapper(buffer);
-  DEBUG("recieved wrapper:");
-  DebugWrapper(buffer);
   if (static_cast<uint16_t>(WrapperType::DATA) == buffer->type) {
+    DEBUG("Converting Net to Host packet");
     NetToHostPacket(buffer->packet);
   }
+  DEBUG("recieved wrapper:");
+  DebugWrapper(buffer);
   if (Mode::Server == m_mode) {
     /* hopefully we only talk to one person */
     memcpy(&m_other_addr, &recv_addr, sizeof(recv_addr));
@@ -568,6 +569,8 @@ void ClientServer::DebugWrapper(const Wrapper* wrapper) {
   if (wrapper->type == static_cast<uint16_t>(WrapperType::DATA)) {
     DEBUG("with data:");
     DebugPacket(wrapper->packet);
+  } else {
+    DEBUG("without data");
   }
 }
 
