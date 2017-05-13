@@ -36,21 +36,18 @@ bool ClientServer::StartServer(unsigned int port, const char * ip) {
     /* blocking */
     if (!RecvPacket(recv_buf)) {
       DEBUG("Failed to recieve packet");
-      return false; //TODO not return
       continue;
     }
     DEBUG("Recieved:");
     DebugPacket(recv_buf);
     if (!ServerCreateResponse(send_buf, recv_buf)) {
       DEBUG("Failed to create response");
-      return false; //TODO not return
       continue;
     }
     DEBUG("Sending:");
     DebugPacket(send_buf);
     if (!SendPacket(send_buf)) {
       DEBUG("Failed to send response");
-      return false; //TODO not return
       continue;
     }
     if (Command::Shutdown == recv_buf->command) {
@@ -85,14 +82,45 @@ bool ClientServer::StartClient(unsigned int port, const char * ip) {
   memset(send_buf, 0, MAX_PACKET_LENGTH);
 
   bool running = true;
-  uint16_t handle = 42;
 
   DEBUG("Client running");
 
   //TODO
   /* arbitrary test commands */
 
+  memset(send_buf, 0, MAX_PACKET_LENGTH);
+  memset(recv_buf, 0, MAX_PACKET_LENGTH);
+  char data[] = "TEST";
+  CreatePacket(send_buf, sizeof(data), NextSequenceNumber(), Command::Echo, 11, data);
+  DEBUG("Sending:");
+  DebugPacket(send_buf);
+  SendPacket(send_buf);
+  RecvPacket(recv_buf);
+  DEBUG("Recieved:");
+  DebugPacket(recv_buf);
+
+  memset(send_buf, 0, MAX_PACKET_LENGTH);
+  memset(recv_buf, 0, MAX_PACKET_LENGTH);
+  CreatePacket(send_buf, 0, NextSequenceNumber(), Command::Invalid, 22, nullptr);
+  DEBUG("Sending:");
+  DebugPacket(send_buf);
+  SendPacket(send_buf);
+  RecvPacket(recv_buf);
+  DEBUG("Recieved:");
+  DebugPacket(recv_buf);
+
+  memset(send_buf, 0, MAX_PACKET_LENGTH);
+  memset(recv_buf, 0, MAX_PACKET_LENGTH);
+  CreatePacket(send_buf, 0, NextSequenceNumber(), Command::Unsupported, 33, nullptr);
+  DEBUG("Sending:");
+  DebugPacket(send_buf);
+  SendPacket(send_buf);
+  RecvPacket(recv_buf);
+  DEBUG("Recieved:");
+  DebugPacket(recv_buf);
+
   /* ending with server shutdown */
+  uint16_t handle = 66;
   while (running) {
     memset(send_buf, 0, MAX_PACKET_LENGTH);
     memset(recv_buf, 0, MAX_PACKET_LENGTH);
@@ -103,7 +131,7 @@ bool ClientServer::StartClient(unsigned int port, const char * ip) {
     RecvPacket(recv_buf);
     DEBUG("Recieved:");
     DebugPacket(recv_buf);
-    if (handle == recv_buf->handle
+    if (send_buf->handle == recv_buf->handle
         && static_cast<uint16_t>(Command::ShutdownReply) == recv_buf->command) {
       DEBUG("Recieved ShutdownReply");
       running = false;
@@ -273,6 +301,7 @@ bool ClientServer::SendPacket(Packet* packet) {
     DEBUG("sendto failed");
     return false;
   }
+  NetToHostPacket(packet); /* also revert, so we can keep on using it */
   /* all went well */
   return true;
 }
