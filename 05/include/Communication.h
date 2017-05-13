@@ -2,16 +2,16 @@
 #define COMMUNICATION_H
 
 #include <cstdint>
-#include <cstring>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
-
+#include <cstring> /* for memcpy, memset */
+#include <sys/types.h> /* for socket_addr */
+#include <sys/socket.h> /* for socket */
+#include <netinet/in.h> /* for socket type */
+#include <arpa/inet.h> /* for socket addr */
+#include <netdb.h> /* for gethostbyname */
+#include <unistd.h> /* for close */
 
 #include "PoolAllocator.h"
 #include "debug.h"
-
 
 class ClientServer {
  public:
@@ -49,8 +49,8 @@ class ClientServer {
     : m_packet_buffer(),
       m_sequence_number(0),
       m_socket(-1),
-      m_server_addr(),
-      m_client_addr() {}
+      m_my_addr(),
+      m_other_addr() {}
     bool Start(Mode mode, unsigned int port, const char * ip);
 
   private:
@@ -65,9 +65,11 @@ class ClientServer {
                       uint16_t sequenceNumber, Command command,
                       uint16_t handle, const void* data_buf);
     bool SendPacket(Packet* packet);
+    /* blocking */
     bool RecvPacket(Packet* buffer);
-    /** will not convert payload */
+    /* will not convert payload */
     void HostToNetPacket(Packet* packet);
+    /* will not convert payload */
     void NetToHostPacket(Packet* packet);
     uint16_t NextSequenceNumber();
     void DebugPacket(Packet* packet);
@@ -76,7 +78,7 @@ class ClientServer {
     PoolAllocator<10, MAX_PACKET_LENGTH> m_packet_buffer;
     uint16_t m_sequence_number;
     int m_socket;
-    sockaddr_in m_server_addr, m_client_addr;
+    sockaddr_in m_my_addr, m_other_addr;
 };
 
 #endif /* COMMUNICATION_H */

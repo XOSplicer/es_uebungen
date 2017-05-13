@@ -97,31 +97,99 @@ bool ClientServer::StartClient(unsigned int port, const char * ip) {
   return true;
 }
 
-bool ClientServer::InitServer(unsigned int /*port*/, const char * /*ip*/) {
+bool ClientServer::InitServer(unsigned int port, const char * ip) {
+  /* ip may be null for INADDR_ANY */
+  DEBUG("Initializing server");
+  if(!port) {
+    return false;
+  }
   /* create socket */
   m_socket = socket (AF_INET, SOCK_DGRAM | SOCK_CLOEXEC, 0);
   if (m_socket < 0) {
     DEBUG("Failed to open socket");
     return false;
   }
-  /* Bind server to given port and ip */
+  /* Bind server to given port and ip or any ip if nullprt */
+  /* we dont need other_addr here */
+  /* step 1 find out the server address we are on */
+  memset((char*) &m_my_addr, 0, sizeof(m_my_addr));
+  m_my_addr.sin_family = AF_INET;
+  m_my_addr.sin_port = htons(port);
+  if (ip) {
+    hostent *hp; /* host information */
+    hp = gethostbyname(ip);
+    if (hp) {
+      memcpy((void*) &(m_my_addr.sin_addr), hp->h_addr_list[0], hp->h_length);
+      /* just pick the first one here, TODO validate that its ipv4 */
+    } else {
+      DEBUG("Could not get host for " << ip << "fallback to INADDR_ANY");
+      m_my_addr.sin_addr.s_addr = htonl(INADDR_ANY);
+    }
+  } else {
+    m_my_addr.sin_addr.s_addr = htonl(INADDR_ANY);
+  }
 
-  //TODO
+  /* step 2 do the bind to server address */
+  if (bind(m_socket, (sockaddr*) &m_my_addr, sizeof(m_my_addr)) < 0) {
+    DEBUG("Could not bind socket to address");
+    return false;
+  }
+
+  /* all went well */
   return true;
 }
 
-bool ClientServer::InitClient(unsigned int /*port*/, const char * /*ip*/) {
-  //TODO
+bool ClientServer::InitClient(unsigned int port, const char * ip) {
+  DEBUG("Initializing client");
+  if (!ip || !port) {
+    return false;
+  }
+  /* create socket */
+  m_socket = socket (AF_INET, SOCK_DGRAM | SOCK_CLOEXEC, 0);
+  if (m_socket < 0) {
+    DEBUG("Failed to open socket");
+    return false;
+  }
+
+  /* find our address to be any, this is where we bind the socket to */
+  memset((char*) &m_my_addr, 0, sizeof(m_my_addr));
+  m_my_addr.sin_family = AF_INET;
+  m_my_addr.sin_port = htons(0); /* any port */
+  m_my_addr.sin_addr.s_addr = htonl(INADDR_ANY); /* any address */
+
+  /* find out server address, this is where we send messages */
+  memset((char*) &m_other_addr, 0, sizeof(m_other_addr));
+  m_other_addr.sin_family = AF_INET;
+  m_other_addr.sin_port = htons(port);
+  hostent *hp; /* host information */
+  hp = gethostbyname(ip);
+  if (hp) {
+    memcpy((void*) &(m_other_addr.sin_addr), hp->h_addr_list[0], hp->h_length);
+    /* just pick the first one here, TODO validate that its ipv4 */
+  } else {
+    DEBUG("Could not get host for " << ip);
+    return false;
+  }
+
+  /* bind to client addr */
+  if (bind(m_socket, (sockaddr*) &m_my_addr, sizeof(m_my_addr)) < 0) {
+    DEBUG("Could not bind socket to address");
+    return false;
+  }
+
+  /* all went fine */
   return true;
 }
 
 bool ClientServer::ShutdownServer() {
-  //TODO
+  DEBUG("Shutting down server");
+  close(m_socket);
   return true;
 }
 
 bool ClientServer::ShutdownClient() {
-  //TODO
+  DEBUG("Shutting down client");
+  close(m_socket);
   return true;
 }
 
@@ -171,9 +239,10 @@ bool ClientServer::SendPacket(Packet* packet) {
     return false;
   }
   //TODO
-  return true;
+  return false;
 }
 
+/* blocking */
 bool ClientServer::RecvPacket(Packet* buffer) {
   if (!buffer) {
     return false;
@@ -183,13 +252,13 @@ bool ClientServer::RecvPacket(Packet* buffer) {
   char data[16] = "test";
   return CreatePacket(buffer, sizeof(data), NextSequenceNumber(), Command::Echo, 42, data);
 
-  return true;
+  return false;
 }
 
-/** will not convert payload */
-void HostToNetPacket(Packet* packet) {
+/* will not convert payload */
+void ClientServer::HostToNetPacket(Packet* packet) {
   if (!packet) {
-    return
+    return;
   }
   /* htons converts host to net uint16_t */
   packet->payloadLength   = htons(packet->payloadLength);
@@ -198,10 +267,10 @@ void HostToNetPacket(Packet* packet) {
   packet->handle          = htons(packet->handle);
 }
 
-/** will not convert payload */
-void NetToHostPacket(Packet* packet) {
+/* will not convert payload */
+void ClientServer::NetToHostPacket(Packet* packet) {
   if (!packet) {
-    return
+    return;
   }
   /* htons converts net to host uint16_t */
   packet->payloadLength   = ntohs(packet->payloadLength);
