@@ -1,13 +1,13 @@
 #ifndef COMMUNICATION_H
 #define COMMUNICATION_H
 
-#include <cstdint>
+#include <cstdint> /* for uintXX_T */
 #include <cstring> /* for memcpy, memset */
 #include <sys/types.h> /* for socket_addr */
 #include <sys/socket.h> /* for socket */
 #include <netinet/in.h> /* for socket type */
 #include <arpa/inet.h> /* for socket addr */
-#include <netdb.h> /* for gethostbyname */
+#include <netdb.h> /* for gethostbyname */ 
 #include <unistd.h> /* for close and write*/
 
 #include "PoolAllocator.h"
@@ -133,7 +133,7 @@ class ClientServer {
     bool ShutdownServer();
     bool ShutdownClient();
     bool ServerCreateResponse(Packet* buffer, Packet* recieved);
-    bool CreatePacket(Packet* buffer, u_int16_t payloadLength,
+    bool CreatePacket(Packet* buffer, uint16_t payloadLength,
                       uint16_t sequenceNumber, Command command,
                       uint16_t handle, const void* data_buf);
     bool SendPacket(const Packet* packet);

@@ -286,7 +286,7 @@ bool ClientServer::ServerCreateResponse(Packet* buffer, Packet* recieved) {
   }
 }
 
-bool ClientServer::CreatePacket(Packet* buffer, u_int16_t payloadLength,
+bool ClientServer::CreatePacket(Packet* buffer, uint16_t payloadLength,
                   uint16_t sequenceNumber, Command command,
                   uint16_t handle, const void* data_buf) {
   if (!buffer
@@ -313,13 +313,13 @@ bool ClientServer::SendPacket(const Packet* packet) {
     uint16_t send_seq = NextWrapperNumber();
     if (!SendDataWrapper(packet, send_seq)) {
       DEBUG("Failed to send Wrapper, retrying " << retries+1 << "/" << MAX_SEND_RETRIES);
-      usleep(10);
+      //usleep(10);
       continue;
     }
     if (!RecvWrapper(recv_buf, send_seq)
         || static_cast<uint16_t>(WrapperType::ACK) != recv_buf->type) {
       DEBUG("Failed to recieve Wrapper, retrying " << retries+1 << "/" << MAX_SEND_RETRIES);
-      usleep(10);
+      //usleep(10);
       continue;
     }
     /* went well */
