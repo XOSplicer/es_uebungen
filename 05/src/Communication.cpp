@@ -30,6 +30,11 @@ bool ClientServer::StartServer(unsigned int port, const char * ip) {
     static_cast<Packet*>(m_packet_buffer.Allocate(MAX_PACKET_LENGTH));
 
   DEBUG("Server running");
+
+  char print_buf[128] = {0};
+  Printf(print_buf,  print_buf + sizeof(print_buf),  "Server running\n");
+  write(STDOUT, print_buf, strlen(print_buf));
+
   while (running) {
     memset(recv_buf, 0, MAX_PACKET_LENGTH);
     memset(send_buf, 0, MAX_PACKET_LENGTH);
@@ -63,6 +68,9 @@ bool ClientServer::StartServer(unsigned int port, const char * ip) {
   m_packet_buffer.Deallocate(recv_buf);
   m_packet_buffer.Deallocate(send_buf);
 
+  Printf(print_buf, print_buf + sizeof(print_buf),  "Server done\n");
+  write(STDOUT, print_buf, strlen(print_buf));
+
   return true;
 }
 
@@ -84,8 +92,10 @@ bool ClientServer::StartClient(unsigned int port, const char * ip) {
   bool running = true;
 
   DEBUG("Client running");
+  char print_buf[128] = {0};
+  Printf(print_buf, print_buf + sizeof(print_buf), "Client running\n");
+  write(STDOUT, print_buf, strlen(print_buf));
 
-  //TODO
   /* arbitrary test commands */
 
   memset(send_buf, 0, MAX_PACKET_LENGTH);
@@ -149,6 +159,9 @@ bool ClientServer::StartClient(unsigned int port, const char * ip) {
 
   m_packet_buffer.Deallocate(recv_buf);
   m_packet_buffer.Deallocate(send_buf);
+
+  Printf(print_buf,  print_buf + sizeof(print_buf), "Client done\n");
+  write(STDOUT, print_buf, strlen(print_buf));
 
   return true;
 }

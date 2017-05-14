@@ -2,12 +2,18 @@
  * @author Felix Stegmaier
  */
 
+#include <unistd.h> /* for write*/
+
 #include "Communication.h"
 #include "debug.h"
 
+#define PORT 55047 //private, random constant
+
+void print_usage();
+
 int main(int argc, char const *argv[]) {
-  if (2 != argc) {
-    DEBUG("options: -s : server mode -c : client mode");
+  if (2 > argc) {
+    print_usage();
     DEBUG("sizeof(ClientServer::Packet)=" << sizeof(ClientServer::Packet));
     DEBUG("sizeof(ClientServer::Command)=" << sizeof(ClientServer::Command));
     DEBUG("MAX_PAYLOAD_LENGTH=" << ClientServer::MAX_PAYLOAD_LENGTH);
@@ -17,14 +23,23 @@ int main(int argc, char const *argv[]) {
   ClientServer client_server;
   if ('-' == argv[1][0]
       && 's' == argv[1][1]) {
-    return client_server.Start(ClientServer::Mode::Server, 9000, "127.0.0.1")
+        //bind to all interfaces on port PORT
+    return client_server.Start(ClientServer::Mode::Server, PORT, nullptr)
       ? 0 : 2 ;
   } else if ('-' == argv[1][0]
-      && 'c' == argv[1][1]) {
-    return client_server.Start(ClientServer::Mode::Client, 9000, "127.0.0.1")
+      && 'c' == argv[1][1]
+      && argc == 3 ) {
+    return client_server.Start(ClientServer::Mode::Client, PORT, argv[2])
       ? 0 : 2;
   } else {
-    DEBUG("options: -s : server mode -c : client mode");
+    print_usage();
     return 1;
   }
+}
+
+
+void print_usage() {
+  char print_buf[256] = {0};
+  Printf(print_buf, print_buf + sizeof(print_buf), "Options: \n\t-s\t\tserver mode\n\t-c <server IP>\tclient mode\nServer uses UDP port %d\n", PORT);
+  write(STDOUT, print_buf, strlen(print_buf));
 }

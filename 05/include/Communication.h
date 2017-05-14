@@ -8,10 +8,12 @@
 #include <netinet/in.h> /* for socket type */
 #include <arpa/inet.h> /* for socket addr */
 #include <netdb.h> /* for gethostbyname */
-#include <unistd.h> /* for close */
+#include <unistd.h> /* for close and write*/
 
 #include "PoolAllocator.h"
+#include "Printf.h"
 #include "debug.h"
+#include "util.h"
 
 /*
 
