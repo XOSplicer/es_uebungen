@@ -3,9 +3,12 @@
  */
 
 #include <unistd.h> /* for write*/
+#include <cstring>
 
 #include "Communication.h"
+#include "Printf.h"
 #include "debug.h"
+#include "util.h"
 
 #define PORT 55047 //private, random constant
 
